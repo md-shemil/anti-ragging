@@ -17,6 +17,8 @@ export function Complaint() {
   });
   const [errors, setErrors] = useState({});
 
+  const MAX_FILE_SIZE_MB = 5;
+
   const validateForm = () => {
     const newErrors = {};
 
@@ -26,6 +28,14 @@ export function Complaint() {
 
     if (!formData.description.trim()) {
       newErrors.description = "Description is required";
+    }
+
+    if (selectedFile) {
+      const sizeInMB = selectedFile.size / (1024 * 1024);
+      if (sizeInMB > MAX_FILE_SIZE_MB) {
+        toast.error("PDF file must be less than 5MB.");
+        return false;
+      }
     }
 
     setErrors(newErrors);
@@ -50,11 +60,11 @@ export function Complaint() {
 
       const formDataToSend = new FormData();
       formDataToSend.append("user_id", user.id);
-      formDataToSend.append("subject", formData.subject);
-      formDataToSend.append("description", formData.description);
-      formDataToSend.append("date", formData.date);
-      formDataToSend.append("location", formData.location);
-      formDataToSend.append("witnesses", formData.witnesses);
+      formDataToSend.append("subject", formData.subject.trim());
+      formDataToSend.append("description", formData.description.trim());
+      formDataToSend.append("date", formData.date || "");
+      formDataToSend.append("location", formData.location || "");
+      formDataToSend.append("witnesses", formData.witnesses || "");
 
       if (selectedFile) {
         formDataToSend.append("file", selectedFile);
@@ -67,7 +77,7 @@ export function Complaint() {
 
       const data = await response.json();
 
-      if (data.success) {
+      if (response.ok && data.success) {
         toast.success("Your complaint has been submitted");
         setFormData({
           subject: "",
@@ -89,8 +99,13 @@ export function Complaint() {
   };
 
   const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type !== "application/pdf") {
+        toast.error("Only PDF files are allowed.");
+        return;
+      }
+      setSelectedFile(file);
     }
   };
 
@@ -99,7 +114,6 @@ export function Complaint() {
       <div className="max-w-3xl mx-auto">
         <div className="bg-white p-8 rounded-xl shadow-lg">
           <div className="flex items-center justify-center mb-8">
-            {/* Replaced Shield with logo */}
             <img
               src={logo}
               alt="Anti-Ragging Committee Logo"
@@ -200,17 +214,17 @@ export function Complaint() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Supporting Evidence (optional)
+                Supporting Evidence (PDF only)
               </label>
               <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-3">
                 <label className="cursor-pointer inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none">
                   <Upload className="h-4 w-4 mr-2" />
-                  {selectedFile ? selectedFile.name : "Choose a file"}
+                  {selectedFile ? selectedFile.name : "Choose a PDF"}
                   <input
                     type="file"
                     className="sr-only"
                     onChange={handleFileChange}
-                    accept="image/*,video/*,.pdf,.doc,.docx"
+                    accept=".pdf"
                   />
                 </label>
                 {selectedFile && (
@@ -224,7 +238,7 @@ export function Complaint() {
                 )}
               </div>
               <p className="mt-2 text-xs text-gray-500">
-                Accepted formats: images, videos, PDF, Word (max 5MB)
+                Accepted format: .pdf (max 5MB)
               </p>
             </div>
 

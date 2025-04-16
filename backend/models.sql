@@ -17,6 +17,6 @@ CREATE TABLE complaints (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT,
   complaint_text TEXT,
-  pdf_file LONGBLOB, -- if storing PDF as binary
+  pdf_path VARCHAR(255),  -- store file path instead of binary data
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
