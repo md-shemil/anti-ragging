@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Shield, AlertTriangle, Upload } from "lucide-react";
+import { AlertTriangle, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 import { Input } from "../components/Input";
 import { Button } from "../components/Button";
+import logo from "../assets/logo.png";
 
 export function Complaint() {
   const [isLoading, setIsLoading] = useState(false);
@@ -39,7 +40,6 @@ export function Complaint() {
     setIsLoading(true);
 
     try {
-      // Get the current user from localStorage
       const user = JSON.parse(localStorage.getItem("user") || "{}");
 
       if (!user.id) {
@@ -48,7 +48,6 @@ export function Complaint() {
         return;
       }
 
-      // Create FormData object
       const formDataToSend = new FormData();
       formDataToSend.append("user_id", user.id);
       formDataToSend.append("subject", formData.subject);
@@ -57,22 +56,19 @@ export function Complaint() {
       formDataToSend.append("location", formData.location);
       formDataToSend.append("witnesses", formData.witnesses);
 
-      // Add file if selected
       if (selectedFile) {
         formDataToSend.append("file", selectedFile);
       }
 
-      // Submit form data
       const response = await fetch("http://localhost:5000/submit-complaint", {
         method: "POST",
-        body: formDataToSend, // No Content-Type header needed, browser sets it with boundary
+        body: formDataToSend,
       });
 
       const data = await response.json();
 
       if (data.success) {
         toast.success("Your complaint has been submitted");
-        // Reset form
         setFormData({
           subject: "",
           description: "",
@@ -103,7 +99,12 @@ export function Complaint() {
       <div className="max-w-3xl mx-auto">
         <div className="bg-white p-8 rounded-xl shadow-lg">
           <div className="flex items-center justify-center mb-8">
-            <Shield className="h-12 w-12 text-indigo-600" />
+            {/* Replaced Shield with logo */}
+            <img
+              src={logo}
+              alt="Anti-Ragging Committee Logo"
+              className="h-16 w-auto"
+            />
           </div>
           <h2 className="text-center text-3xl font-extrabold text-gray-900 mb-2">
             Report Ragging Incident
@@ -112,7 +113,7 @@ export function Complaint() {
             Your complaint will be treated with strict confidentiality
           </p>
 
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-8">
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-8 rounded-md">
             <div className="flex">
               <div className="flex-shrink-0">
                 <AlertTriangle className="h-5 w-5 text-yellow-400" />
@@ -137,11 +138,12 @@ export function Complaint() {
               }
               error={errors.subject}
               placeholder="Brief subject of the incident"
+              required
             />
 
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Detailed Description
+                Detailed Description <span className="text-red-500">*</span>
               </label>
               <div className="mt-1">
                 <textarea
@@ -152,6 +154,7 @@ export function Complaint() {
                   }
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   placeholder="Please provide a detailed account of the incident"
+                  required
                 />
               </div>
               {errors.description && (
@@ -161,26 +164,28 @@ export function Complaint() {
               )}
             </div>
 
-            <Input
-              id="date"
-              label="Date of Incident"
-              type="date"
-              value={formData.date}
-              onChange={(e) =>
-                setFormData({ ...formData, date: e.target.value })
-              }
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Input
+                id="date"
+                label="Date of Incident"
+                type="date"
+                value={formData.date}
+                onChange={(e) =>
+                  setFormData({ ...formData, date: e.target.value })
+                }
+              />
 
-            <Input
-              id="location"
-              label="Location of Incident"
-              type="text"
-              value={formData.location}
-              onChange={(e) =>
-                setFormData({ ...formData, location: e.target.value })
-              }
-              placeholder="Where did the incident occur?"
-            />
+              <Input
+                id="location"
+                label="Location of Incident"
+                type="text"
+                value={formData.location}
+                onChange={(e) =>
+                  setFormData({ ...formData, location: e.target.value })
+                }
+                placeholder="Where did the incident occur?"
+              />
+            </div>
 
             <Input
               id="witnesses"
@@ -197,34 +202,37 @@ export function Complaint() {
               <label className="block text-sm font-medium text-gray-700">
                 Supporting Evidence (optional)
               </label>
-              <div className="mt-1 flex items-center">
-                <label className="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none">
-                  <Upload className="h-4 w-4 inline-block mr-1" />
+              <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-3">
+                <label className="cursor-pointer inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none">
+                  <Upload className="h-4 w-4 mr-2" />
                   {selectedFile ? selectedFile.name : "Choose a file"}
                   <input
                     type="file"
                     className="sr-only"
                     onChange={handleFileChange}
+                    accept="image/*,video/*,.pdf,.doc,.docx"
                   />
                 </label>
                 {selectedFile && (
                   <button
                     type="button"
-                    className="ml-2 text-sm text-red-600 hover:text-red-800"
+                    className="px-3 py-2 text-sm text-red-600 hover:text-red-800"
                     onClick={() => setSelectedFile(null)}
                   >
-                    Remove
+                    Remove File
                   </button>
                 )}
               </div>
-              <p className="mt-1 text-xs text-gray-500">
-                Upload photos, videos or documents related to the incident
+              <p className="mt-2 text-xs text-gray-500">
+                Accepted formats: images, videos, PDF, Word (max 5MB)
               </p>
             </div>
 
-            <Button type="submit" isLoading={isLoading}>
-              Submit Complaint
-            </Button>
+            <div className="pt-4">
+              <Button type="submit" isLoading={isLoading} className="w-full">
+                Submit Complaint
+              </Button>
+            </div>
           </form>
         </div>
       </div>

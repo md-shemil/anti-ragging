@@ -1,9 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { Shield, User, Mail, Lock } from "lucide-react";
+import { User, Mail, Lock } from "lucide-react";
 import { Input } from "../components/Input";
 import { Button } from "../components/Button";
+
+// Import your logo image
+import logo from "../assets/logo.png"; // Adjust this path to your actual logo location
 
 export function Register() {
   const navigate = useNavigate();
@@ -56,7 +59,6 @@ export function Register() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Modified handleSubmit function for your Register component
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -65,7 +67,6 @@ export function Register() {
     setIsLoading(true);
 
     try {
-      // Replace with your actual API URL
       const response = await fetch("http://localhost:5000/register", {
         method: "POST",
         headers: {
@@ -87,7 +88,6 @@ export function Register() {
         toast.success("Registration successful! Please login.");
         navigate("/login");
       } else {
-        // Display error message from backend
         toast.error(data.message || "Registration failed");
       }
     } catch (error) {
@@ -103,7 +103,12 @@ export function Register() {
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
         <div className="text-center">
           <div className="flex justify-center">
-            <Shield className="h-12 w-12 text-indigo-600" />
+            {/* Replaced Shield icon with logo image */}
+            <img
+              src={logo}
+              alt="Anti-Ragging Committee Logo"
+              className="h-12 w-auto" // Adjust size as needed
+            />
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
             Create your account

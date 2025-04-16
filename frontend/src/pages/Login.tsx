@@ -1,9 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { Shield, Mail, Lock } from "lucide-react";
+import { Mail, Lock } from "lucide-react";
 import { Input } from "../components/Input";
 import { Button } from "../components/Button";
+
+// Assuming you have a logo image in your assets
+import logo from "../assets/logo.png"; // Adjust this path to your actual logo location
 
 export function Login() {
   const navigate = useNavigate();
@@ -72,7 +75,12 @@ export function Login() {
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
         <div className="text-center">
           <div className="flex justify-center">
-            <Shield className="h-12 w-12 text-indigo-600" />
+            {/* Replaced Shield icon with logo image */}
+            <img
+              src={logo}
+              alt="Logo"
+              className="h-12 w-auto" // Adjust size as needed
+            />
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
             Welcome back
