@@ -4,12 +4,17 @@ import toast from "react-hot-toast";
 import { Shield, Mail, Lock, UserCog } from "lucide-react";
 import { Input } from "../components/Input";
 import { Button } from "../components/Button";
-import logo from "../assets/logo.png"; // your logo
+import logo from "../assets/logo.png";
 
-export function Login() {
+interface LoginProps {
+  setIsAuthenticated: (value: boolean) => void;
+  setIsAdmin: (value: boolean) => void;
+}
+
+export function Login({ setIsAuthenticated, setIsAdmin }: LoginProps) {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdminLogin, setIsAdminLogin] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -28,6 +33,8 @@ export function Login() {
 
     if (!formData.password) {
       newErrors.password = "Password is required";
+    } else if (formData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
     }
 
     setErrors(newErrors);
@@ -40,21 +47,71 @@ export function Login() {
 
     setIsLoading(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      // Replace with actual API call
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/auth/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+            isAdmin: isAdminLogin,
+          }),
+        }
+      );
 
-    if (isAdmin) {
-      localStorage.setItem("isAdmin", "true");
-      toast.success("Welcome back, Administrator!");
-      navigate("/admin");
-    } else {
-      localStorage.removeItem("isAdmin");
-      toast.success("Successfully logged in!");
-      navigate("/home");
+      const data = await response.json();
+
+      if (response.ok) {
+        // Store user data and tokens
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("isAdmin", data.user.isAdmin ? "true" : "false");
+
+        setIsAuthenticated(true);
+        setIsAdmin(data.user.isAdmin);
+
+        toast.success(`Welcome back, ${data.user.name || "User"}!`);
+
+        // Redirect based on role
+        if (data.user.isAdmin) {
+          navigate("/admin");
+        } else {
+          navigate("/home");
+        }
+
+        // Remember me functionality
+        if (formData.rememberMe) {
+          localStorage.setItem("rememberedEmail", formData.email);
+        } else {
+          localStorage.removeItem("rememberedEmail");
+        }
+      } else {
+        toast.error(data.message || "Login failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error("An error occurred during login");
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
+
+  // Pre-fill email if "remember me" was checked previously
+  React.useEffect(() => {
+    const rememberedEmail = localStorage.getItem("rememberedEmail");
+    if (rememberedEmail) {
+      setFormData((prev) => ({
+        ...prev,
+        email: rememberedEmail,
+        rememberMe: true,
+      }));
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
@@ -64,19 +121,22 @@ export function Login() {
             <img src={logo} alt="Logo" className="h-12 w-auto" />
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Welcome back
+            {isAdminLogin ? "Admin Portal" : "Welcome back"}
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Sign in to access the Anti-Ragging Committee Portal
+            {isAdminLogin
+              ? "Administrator credentials required"
+              : "Sign in to access the Anti-Ragging Committee Portal"}
           </p>
         </div>
 
         <div className="flex justify-center space-x-4">
           <button
-            onClick={() => setIsAdmin(false)}
-            className={`flex items-center px-4 py-2 rounded-lg ${
-              !isAdmin
-                ? "bg-indigo-100 text-indigo-700"
+            type="button"
+            onClick={() => setIsAdminLogin(false)}
+            className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
+              !isAdminLogin
+                ? "bg-indigo-100 text-indigo-700 shadow-inner"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
@@ -84,10 +144,11 @@ export function Login() {
             Student/Faculty
           </button>
           <button
-            onClick={() => setIsAdmin(true)}
-            className={`flex items-center px-4 py-2 rounded-lg ${
-              isAdmin
-                ? "bg-indigo-100 text-indigo-700"
+            type="button"
+            onClick={() => setIsAdminLogin(true)}
+            className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
+              isAdminLogin
+                ? "bg-indigo-100 text-indigo-700 shadow-inner"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
@@ -111,7 +172,11 @@ export function Login() {
                 error={errors.email}
                 autoComplete="email"
                 className="pl-10"
-                placeholder={isAdmin ? "Enter admin email" : "Enter your email"}
+                placeholder={
+                  isAdminLogin
+                    ? "admin@university.edu"
+                    : "your.email@university.edu"
+                }
               />
             </div>
 
@@ -126,11 +191,9 @@ export function Login() {
                   setFormData({ ...formData, password: e.target.value })
                 }
                 error={errors.password}
-                autoComplete="current-password"
+                autoComplete={isAdminLogin ? "off" : "current-password"}
                 className="pl-10"
-                placeholder={
-                  isAdmin ? "Enter admin password" : "Enter your password"
-                }
+                placeholder="••••••••"
               />
             </div>
 
@@ -153,29 +216,31 @@ export function Login() {
                   Remember me
                 </label>
               </div>
-              <div className="text-sm">
-                <a
-                  href="#"
-                  className="font-medium text-indigo-600 hover:text-indigo-500"
-                >
-                  Forgot your password?
-                </a>
-              </div>
+              {!isAdminLogin && (
+                <div className="text-sm">
+                  <a
+                    href="/forgot-password"
+                    className="font-medium text-indigo-600 hover:text-indigo-500"
+                  >
+                    Forgot password?
+                  </a>
+                </div>
+              )}
             </div>
           </div>
 
-          <Button type="submit" isLoading={isLoading}>
-            {isAdmin ? "Sign in as Administrator" : "Sign in"}
+          <Button type="submit" isLoading={isLoading} className="w-full">
+            {isAdminLogin ? "Admin Sign In" : "Sign In"}
           </Button>
 
-          {!isAdmin && (
+          {!isAdminLogin && (
             <div className="text-center text-sm">
-              <span className="text-gray-600">Don't have an account?</span>{" "}
+              <span className="text-gray-600">New to the platform?</span>{" "}
               <a
                 href="/register"
                 className="font-medium text-indigo-600 hover:text-indigo-500"
               >
-                Create an account
+                Create account
               </a>
             </div>
           )}

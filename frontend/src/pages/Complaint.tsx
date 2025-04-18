@@ -72,14 +72,14 @@ export function Complaint() {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-      if (!user.id) {
+      if (!user._id) {
         toast.error("You must be logged in to submit a complaint");
         setIsLoading(false);
         return;
       }
 
       const formDataToSend = new FormData();
-      formDataToSend.append("user_id", user.id);
+      formDataToSend.append("user_id", user._id);
       formDataToSend.append("subject", formData.subject.trim());
       formDataToSend.append("description", formData.description.trim());
       formDataToSend.append("date", formData.date || "");
@@ -90,10 +90,15 @@ export function Complaint() {
         formDataToSend.append("file", selectedFile);
       }
 
+      const token = localStorage.getItem("token");
+
       const response = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/complaints/submit-complaint`,
         {
           method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
           body: formDataToSend,
         }
       );
