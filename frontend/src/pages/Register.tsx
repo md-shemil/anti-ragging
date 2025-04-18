@@ -67,20 +67,23 @@ export function Register() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          role: formData.role,
-          studentId: formData.studentId,
-          department: formData.department,
-        }),
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/auth/register`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+            role: formData.role,
+            studentId: formData.studentId,
+            department: formData.department,
+          }),
+        }
+      );
 
       const data = await response.json();
 

@@ -1,13 +1,22 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { AlertTriangle, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 import { Input } from "../components/Input";
 import { Button } from "../components/Button";
 import logo from "../assets/logo.png";
 
+interface newErrors {
+  subject?: string;
+  description?: string;
+  size?: string;
+  date?: string;
+  location?: string;
+  witnesses?: string;
+}
+
 export function Complaint() {
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     subject: "",
     description: "",
@@ -15,12 +24,23 @@ export function Complaint() {
     location: "",
     witnesses: "",
   });
-  const [errors, setErrors] = useState({});
+
+  const [errors, setErrors] = useState<newErrors>({});
 
   const MAX_FILE_SIZE_MB = 5;
 
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors: newErrors = {};
 
     if (!formData.subject.trim()) {
       newErrors.subject = "Subject is required";
@@ -42,7 +62,7 @@ export function Complaint() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) return;
@@ -70,10 +90,13 @@ export function Complaint() {
         formDataToSend.append("file", selectedFile);
       }
 
-      const response = await fetch("http://localhost:5000/submit-complaint", {
-        method: "POST",
-        body: formDataToSend,
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/complaints/submit-complaint`,
+        {
+          method: "POST",
+          body: formDataToSend,
+        }
+      );
 
       const data = await response.json();
 
@@ -98,7 +121,7 @@ export function Complaint() {
     }
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.type !== "application/pdf") {
@@ -144,13 +167,12 @@ export function Complaint() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input
               id="subject"
+              name="subject"
               label="Subject of Complaint"
               type="text"
               value={formData.subject}
-              onChange={(e) =>
-                setFormData({ ...formData, subject: e.target.value })
-              }
-              error={errors.subject}
+              onChange={handleChange}
+              error={errors?.subject}
               placeholder="Brief subject of the incident"
               required
             />
@@ -161,11 +183,10 @@ export function Complaint() {
               </label>
               <div className="mt-1">
                 <textarea
+                  name="description"
                   rows={6}
                   value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
+                  onChange={handleChange}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   placeholder="Please provide a detailed account of the incident"
                   required
@@ -181,34 +202,31 @@ export function Complaint() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Input
                 id="date"
+                name="date"
                 label="Date of Incident"
                 type="date"
                 value={formData.date}
-                onChange={(e) =>
-                  setFormData({ ...formData, date: e.target.value })
-                }
+                onChange={handleChange}
               />
 
               <Input
                 id="location"
+                name="location"
                 label="Location of Incident"
                 type="text"
                 value={formData.location}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
+                onChange={handleChange}
                 placeholder="Where did the incident occur?"
               />
             </div>
 
             <Input
               id="witnesses"
+              name="witnesses"
               label="Witnesses (if any)"
               type="text"
               value={formData.witnesses}
-              onChange={(e) =>
-                setFormData({ ...formData, witnesses: e.target.value })
-              }
+              onChange={handleChange}
               placeholder="Names of any witnesses"
             />
 

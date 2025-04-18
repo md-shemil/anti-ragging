@@ -14,24 +14,21 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route
-            path="/"
-            element={
-              <>
-                <Navbar />
-                <Home />
-              </>
-            }
-          />
-          <Route
-            path="/complaint"
-            element={
-              <>
-                <Navbar />
-                <Complaint />
-              </>
-            }
-          />
+          <Route path="/home" element={
+            <>
+              <Navbar />
+              <Home />
+            </>
+          } />
+          <Route path="/complaint" element={
+            <>
+              <Navbar />
+              <Complaint />
+            </>
+          } />
+          {/* Redirect '/' to '/login' */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          {/* Redirect unknown paths also to '/login' */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>

@@ -1,16 +1,15 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { Mail, Lock } from "lucide-react";
+import { Shield, Mail, Lock, UserCog } from "lucide-react";
 import { Input } from "../components/Input";
 import { Button } from "../components/Button";
-
-// Assuming you have a logo image in your assets
-import logo from "../assets/logo.png"; // Adjust this path to your actual logo location
+import logo from "../assets/logo.png"; // your logo
 
 export function Login() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -37,37 +36,24 @@ export function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validateForm()) return;
+
     setIsLoading(true);
 
-    try {
-      const response = await fetch("http://localhost:5000/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      const result = await response.json();
-
-      if (response.ok) {
-        toast.success("Successfully logged in!");
-        localStorage.setItem("user", JSON.stringify(result.user));
-        navigate("/");
-      } else {
-        toast.error(result.message || "Login failed");
-      }
-    } catch (error) {
-      toast.error("Something went wrong!");
-      console.error(error);
-    } finally {
-      setIsLoading(false);
+    if (isAdmin) {
+      localStorage.setItem("isAdmin", "true");
+      toast.success("Welcome back, Administrator!");
+      navigate("/admin");
+    } else {
+      localStorage.removeItem("isAdmin");
+      toast.success("Successfully logged in!");
+      navigate("/home");
     }
+
+    setIsLoading(false);
   };
 
   return (
@@ -75,12 +61,7 @@ export function Login() {
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
         <div className="text-center">
           <div className="flex justify-center">
-            {/* Replaced Shield icon with logo image */}
-            <img
-              src={logo}
-              alt="Logo"
-              className="h-12 w-auto" // Adjust size as needed
-            />
+            <img src={logo} alt="Logo" className="h-12 w-auto" />
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
             Welcome back
@@ -89,10 +70,36 @@ export function Login() {
             Sign in to access the Anti-Ragging Committee Portal
           </p>
         </div>
+
+        <div className="flex justify-center space-x-4">
+          <button
+            onClick={() => setIsAdmin(false)}
+            className={`flex items-center px-4 py-2 rounded-lg ${
+              !isAdmin
+                ? "bg-indigo-100 text-indigo-700"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            <Shield className="h-5 w-5 mr-2" />
+            Student/Faculty
+          </button>
+          <button
+            onClick={() => setIsAdmin(true)}
+            className={`flex items-center px-4 py-2 rounded-lg ${
+              isAdmin
+                ? "bg-indigo-100 text-indigo-700"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            <UserCog className="h-5 w-5 mr-2" />
+            Administrator
+          </button>
+        </div>
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Mail className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
               <Input
                 id="email"
                 label="Email address"
@@ -104,12 +111,12 @@ export function Login() {
                 error={errors.email}
                 autoComplete="email"
                 className="pl-10"
-                placeholder="Enter your email"
+                placeholder={isAdmin ? "Enter admin email" : "Enter your email"}
               />
             </div>
 
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Lock className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
               <Input
                 id="password"
                 label="Password"
@@ -121,7 +128,9 @@ export function Login() {
                 error={errors.password}
                 autoComplete="current-password"
                 className="pl-10"
-                placeholder="Enter your password"
+                placeholder={
+                  isAdmin ? "Enter admin password" : "Enter your password"
+                }
               />
             </div>
 
@@ -156,18 +165,20 @@ export function Login() {
           </div>
 
           <Button type="submit" isLoading={isLoading}>
-            Sign in
+            {isAdmin ? "Sign in as Administrator" : "Sign in"}
           </Button>
 
-          <div className="text-center text-sm">
-            <span className="text-gray-600">Don't have an account?</span>{" "}
-            <a
-              href="/register"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              Create an account
-            </a>
-          </div>
+          {!isAdmin && (
+            <div className="text-center text-sm">
+              <span className="text-gray-600">Don't have an account?</span>{" "}
+              <a
+                href="/register"
+                className="font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                Create an account
+              </a>
+            </div>
+          )}
         </form>
       </div>
     </div>
