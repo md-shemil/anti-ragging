@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { format } from "date-fns";
 import {
   createColumnHelper,
@@ -19,7 +19,7 @@ import {
 type ComplaintStatus = "pending" | "investigating" | "resolved" | "dismissed";
 
 interface Complaint {
-  id: string;
+  _id: string;
   subject: string;
   submittedBy: string;
   date: string;
@@ -27,33 +27,57 @@ interface Complaint {
   department: string;
 }
 
-const mockComplaints: Complaint[] = [
-  {
-    id: "1",
-    subject: "Harassment in Library",
-    submittedBy: "John Doe",
-    date: "2024-03-15",
-    status: "pending",
-    department: "Computer Science",
-  },
-  {
-    id: "2",
-    subject: "Verbal Abuse",
-    submittedBy: "Jane Smith",
-    date: "2024-03-14",
-    status: "investigating",
-    department: "Electronics",
-  },
-];
-
 const columnHelper = createColumnHelper<Complaint>();
 
 export function AdminDashboard() {
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [searchTerm, setSearchTerm] = useState("");
 
+  useEffect(() => {
+    const fetchComplaints = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/complaints/complaint",
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Fetched complaints:", data);
+          setComplaints(data || []);
+        } else {
+          console.error("Failed to fetch complaints");
+        }
+      } catch (error) {
+        console.error("Error fetching complaints:", error);
+      }
+    };
+
+    fetchComplaints();
+  }, []);
+
+  const filteredComplaints =
+    complaints.length > 0
+      ? complaints.filter(
+          (complaint) =>
+            complaint.subject
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
+            complaint.submittedBy
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
+            complaint.department
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase())
+        )
+      : [];
+
   const columns = [
-    columnHelper.accessor("id", {
+    columnHelper.accessor("_id", {
       header: "ID",
       cell: (info) => info.getValue(),
     }),
@@ -66,17 +90,15 @@ export function AdminDashboard() {
       cell: (info) => info.getValue(),
     }),
     columnHelper.accessor("date", {
-      header: ({ column }) => {
-        return (
-          <button
-            className="flex items-center"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Date
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </button>
-        );
-      },
+      header: ({ column }) => (
+        <button
+          className="flex items-center"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Date
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </button>
+      ),
       cell: (info) => format(new Date(info.getValue()), "MMM d, yyyy"),
     }),
     columnHelper.accessor("department", {
@@ -87,6 +109,8 @@ export function AdminDashboard() {
       header: "Status",
       cell: (info) => {
         const status = info.getValue();
+        const complaintId = info.row.original._id;
+
         const getStatusDisplay = () => {
           switch (status) {
             case "pending":
@@ -97,10 +121,12 @@ export function AdminDashboard() {
                 </span>
               );
             case "investigating":
-              <span className="flex items-center text-blue-600">
-                <AlertCircle className="h-4 w-4 mr-1" />
-                Investigating
-              </span>;
+              return (
+                <span className="flex items-center text-blue-600">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  Investigating
+                </span>
+              );
             case "resolved":
               return (
                 <span className="flex items-center text-green-600">
@@ -112,18 +138,49 @@ export function AdminDashboard() {
               return status;
           }
         };
+
+        const handleStatusChange = async (newStatus: ComplaintStatus) => {
+          try {
+            const response = await fetch(
+              `http://localhost:5000/api/complaints/update-status/${complaintId}`,
+              {
+                method: "PATCH",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+                body: JSON.stringify({ status: newStatus }),
+              }
+            );
+
+            if (response.ok) {
+              console.log(`Status updated to ${newStatus}`);
+              setComplaints((prev) =>
+                prev.map((comp) =>
+                  comp._id === complaintId
+                    ? { ...comp, status: newStatus }
+                    : comp
+                )
+              );
+            } else {
+              console.error("Failed to update status");
+            }
+          } catch (error) {
+            console.error("Error updating status:", error);
+          }
+        };
+
         return (
           <div className="flex items-center space-x-2">
             {getStatusDisplay()}
             <select
-              className="ml-2 text-sm border rounded-md"
+              id={`status-${complaintId}`} // Adding a unique id for each complaint
+              name="status" // Added name for better accessibility
+              className="ml-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 p-1 cursor-pointer"
               value={status}
-              onChange={(e) => {
-                // This would typically update the status in your backend
-                console.log(
-                  `Updating status for ${info.row.original.id} to ${e.target.value}`
-                );
-              }}
+              onChange={(e) =>
+                handleStatusChange(e.target.value as ComplaintStatus)
+              }
             >
               <option value="pending">Pending</option>
               <option value="investigating">Investigating</option>
@@ -137,14 +194,7 @@ export function AdminDashboard() {
   ];
 
   const table = useReactTable({
-    data: mockComplaints.filter(
-      (complaint) =>
-        complaint.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        complaint.submittedBy
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        complaint.department.toLowerCase().includes(searchTerm.toLowerCase())
-    ),
+    data: filteredComplaints,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -196,21 +246,29 @@ export function AdminDashboard() {
                 ))}
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-gray-50">
-                    {row.getVisibleCells().map((cell) => (
-                      <td
-                        key={cell.id}
-                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </td>
-                    ))}
+                {table.getRowModel().rows.length > 0 ? (
+                  table.getRowModel().rows.map((row) => (
+                    <tr key={row.id} className="hover:bg-gray-50">
+                      {row.getVisibleCells().map((cell) => (
+                        <td
+                          key={cell.id}
+                          className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={columns.length} className="text-center py-4">
+                      No complaints found
+                    </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
