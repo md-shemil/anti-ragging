@@ -35,6 +35,13 @@ export function Navbar() {
               <Home className="h-5 w-5 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Home</span>
             </Link>
+            <Link
+              to="/my-complaint"
+              className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 rounded-md transition-colors duration-200"
+            >
+              <FileText className="h-5 w-5 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">My Complaints</span>
+            </Link>
 
             <Link
               to="/complaint"
