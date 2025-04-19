@@ -38,7 +38,7 @@ export function AdminDashboard() {
     const fetchComplaints = async () => {
       try {
         const response = await fetch(
-          "http://localhost:5000/api/complaints/complaint",
+          `${import.meta.env.VITE_BACKEND_URL}/api/complaints/complaint`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -142,7 +142,9 @@ export function AdminDashboard() {
         const handleStatusChange = async (newStatus: ComplaintStatus) => {
           try {
             const response = await fetch(
-              `http://localhost:5000/api/complaints/update-status/${complaintId}`,
+              `${
+                import.meta.env.VITE_BACKEND_URL
+              }/api/complaints/update-status/${complaintId}`,
               {
                 method: "PATCH",
                 headers: {
