@@ -28,7 +28,7 @@ export function MyComplaints() {
         }
 
         const response = await fetch(
-          "http://localhost:5000/api/complaints/my-complaints",
+          `${import.meta.env.VITE_BACKEND_URL}/api/complaints/my-complaints`,
           {
             headers: {
               Authorization: `Bearer ${token}`, // Pass token in headers
