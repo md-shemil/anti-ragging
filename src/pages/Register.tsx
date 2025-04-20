@@ -4,9 +4,24 @@ import toast from "react-hot-toast";
 import { User, Mail, Lock } from "lucide-react";
 import { Input } from "../components/Input";
 import { Button } from "../components/Button";
+import logo from "../assets/logo.png"; // Adjust path if needed
 
-// Import your logo image
-import logo from "../assets/logo.png"; // Adjust this path to your actual logo location
+// Password strength checker
+function getPasswordStrength(password: string) {
+  let score = 0;
+  if (password.length >= 8) score++;
+  if (/[A-Z]/.test(password)) score++;
+  if (/[0-9]/.test(password)) score++;
+  if (/[^A-Za-z0-9]/.test(password)) score++;
+
+  if (score <= 1) return { label: "Weak", color: "bg-red-500", value: 33 };
+  if (score === 2 || score === 3)
+    return { label: "Medium", color: "bg-yellow-500", value: 66 };
+  if (score === 4)
+    return { label: "Strong", color: "bg-green-500", value: 100 };
+
+  return { label: "", color: "", value: 0 };
+}
 
 export function Register() {
   const navigate = useNavigate();
@@ -22,13 +37,12 @@ export function Register() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const passwordStrength = getPasswordStrength(formData.password);
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name) {
-      newErrors.name = "Full name is required";
-    }
-
+    if (!formData.name) newErrors.name = "Full name is required";
     if (!formData.email) {
       newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -61,9 +75,7 @@ export function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validateForm()) return;
-
     setIsLoading(true);
 
     try {
@@ -106,11 +118,10 @@ export function Register() {
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
         <div className="text-center">
           <div className="flex justify-center">
-            {/* Replaced Shield icon with logo image */}
             <img
               src={logo}
               alt="Anti-Ragging Committee Logo"
-              className="h-12 w-auto" // Adjust size as needed
+              className="h-12 w-auto"
             />
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
@@ -123,6 +134,7 @@ export function Register() {
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
+            {/* Name */}
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <Input
@@ -140,6 +152,7 @@ export function Register() {
               />
             </div>
 
+            {/* Email */}
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <Input
@@ -157,6 +170,7 @@ export function Register() {
               />
             </div>
 
+            {/* Role and Department */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -201,6 +215,7 @@ export function Register() {
               </div>
             </div>
 
+            {/* Student ID */}
             {formData.role === "student" && (
               <Input
                 id="studentId"
@@ -215,6 +230,7 @@ export function Register() {
               />
             )}
 
+            {/* Password */}
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <Input
@@ -232,6 +248,25 @@ export function Register() {
               />
             </div>
 
+            {/* Password strength bar */}
+            {formData.password && (
+              <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                <div
+                  className={`${passwordStrength.color} h-2.5 rounded-full`}
+                  style={{ width: `${passwordStrength.value}%` }}
+                ></div>
+              </div>
+            )}
+            {formData.password && (
+              <p className="text-sm font-medium text-gray-600">
+                Strength:{" "}
+                <span className={`${passwordStrength.color} text-sm font-bold`}>
+                  {passwordStrength.label}
+                </span>
+              </p>
+            )}
+
+            {/* Confirm Password */}
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <Input
@@ -250,6 +285,7 @@ export function Register() {
             </div>
           </div>
 
+          {/* Terms */}
           <div className="text-sm text-gray-600">
             By registering, you agree to our{" "}
             <a href="#" className="text-indigo-600 hover:text-indigo-500">
@@ -261,10 +297,12 @@ export function Register() {
             </a>
           </div>
 
+          {/* Submit button */}
           <Button type="submit" isLoading={isLoading}>
             Create account
           </Button>
 
+          {/* Link to login */}
           <div className="text-center text-sm">
             <span className="text-gray-600">Already have an account?</span>{" "}
             <a
