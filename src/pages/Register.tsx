@@ -8,6 +8,23 @@ import { Button } from "../components/Button";
 // Import your logo image
 import logo from "../assets/logo.png"; // Adjust this path to your actual logo location
 
+// Password strength checker function
+function getPasswordStrength(password: string) {
+  let score = 0;
+  if (password.length >= 8) score++;
+  if (/[A-Z]/.test(password)) score++;
+  if (/[0-9]/.test(password)) score++;
+  if (/[^A-Za-z0-9]/.test(password)) score++;
+
+  if (score <= 1) return { label: "Weak", color: "bg-red-500", value: 33 };
+  if (score === 2 || score === 3)
+    return { label: "Medium", color: "bg-yellow-500", value: 66 };
+  if (score === 4)
+    return { label: "Strong", color: "bg-green-500", value: 100 };
+
+  return { label: "", color: "", value: 0 };
+}
+
 export function Register() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -21,6 +38,8 @@ export function Register() {
     department: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const passwordStrength = getPasswordStrength(formData.password);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -106,11 +125,10 @@ export function Register() {
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
         <div className="text-center">
           <div className="flex justify-center">
-            {/* Replaced Shield icon with logo image */}
             <img
               src={logo}
               alt="Anti-Ragging Committee Logo"
-              className="h-12 w-auto" // Adjust size as needed
+              className="h-12 w-auto"
             />
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
@@ -230,6 +248,27 @@ export function Register() {
                 className="pl-10"
                 placeholder="Create a password"
               />
+              {/* Password strength meter */}
+              {formData.password && (
+                <div className="mt-2">
+                  <div className="w-full bg-gray-200 rounded-full h-2.5 mb-1">
+                    <div
+                      className={`h-2.5 rounded-full ${passwordStrength.color}`}
+                      style={{ width: `${passwordStrength.value}%` }}
+                    ></div>
+                  </div>
+                  <p
+                    className="text-sm font-medium"
+                    style={{
+                      color: passwordStrength.color
+                        .replace("bg-", "")
+                        .replace("-500", ""),
+                    }}
+                  >
+                    {passwordStrength.label}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="relative">
