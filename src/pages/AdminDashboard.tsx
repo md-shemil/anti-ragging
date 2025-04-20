@@ -21,10 +21,17 @@ type ComplaintStatus = "pending" | "investigating" | "resolved" | "dismissed";
 interface Complaint {
   _id: string;
   subject: string;
-  submittedBy: string;
+  description: string;
   date: string;
-  status: ComplaintStatus;
+  location: string;
+  witnesses: string;
+  name: string;
   department: string;
+  user_id: string;
+  filePath: string;
+  status: ComplaintStatus;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const columnHelper = createColumnHelper<Complaint>();
@@ -60,34 +67,35 @@ export function AdminDashboard() {
     fetchComplaints();
   }, []);
 
-  const filteredComplaints =
-    complaints.length > 0
-      ? complaints.filter(
-          (complaint) =>
-            complaint.subject
-              .toLowerCase()
-              .includes(searchTerm.toLowerCase()) ||
-            complaint.submittedBy
-              .toLowerCase()
-              .includes(searchTerm.toLowerCase()) ||
-            complaint.department
-              .toLowerCase()
-              .includes(searchTerm.toLowerCase())
-        )
-      : [];
+  const filteredComplaints = complaints.filter(
+    (complaint) =>
+      complaint.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      complaint.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      complaint.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      complaint.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      complaint.department.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const columns = [
-    columnHelper.accessor("_id", {
-      header: "ID",
+    columnHelper.accessor("name", {
+      header: "Name",
+      cell: (info) => info.getValue(),
+    }),
+    columnHelper.accessor("department", {
+      header: "Department",
       cell: (info) => info.getValue(),
     }),
     columnHelper.accessor("subject", {
       header: "Subject",
       cell: (info) => info.getValue(),
     }),
-    columnHelper.accessor("submittedBy", {
-      header: "Submitted By",
-      cell: (info) => info.getValue(),
+    columnHelper.accessor("description", {
+      header: "Description",
+      cell: (info) => (
+        <div className="max-w-xs truncate" title={info.getValue()}>
+          {info.getValue()}
+        </div>
+      ),
     }),
     columnHelper.accessor("date", {
       header: ({ column }) => (
@@ -101,9 +109,20 @@ export function AdminDashboard() {
       ),
       cell: (info) => format(new Date(info.getValue()), "MMM d, yyyy"),
     }),
-    columnHelper.accessor("department", {
-      header: "Department",
+    columnHelper.accessor("location", {
+      header: "Location",
       cell: (info) => info.getValue(),
+    }),
+    columnHelper.accessor("witnesses", {
+      header: "Witnesses",
+      cell: (info) => info.getValue(),
+    }),
+    columnHelper.accessor("filePath", {
+      header: "File Path",
+      cell: (info) => {
+        const path = info.getValue();
+        return path ? <span className="text-gray-700">{path}</span> : "No File";
+      },
     }),
     columnHelper.accessor("status", {
       header: "Status",
@@ -132,6 +151,13 @@ export function AdminDashboard() {
                 <span className="flex items-center text-green-600">
                   <CheckCircle className="h-4 w-4 mr-1" />
                   Resolved
+                </span>
+              );
+            case "dismissed":
+              return (
+                <span className="flex items-center text-red-600">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  Dismissed
                 </span>
               );
             default:
@@ -176,8 +202,8 @@ export function AdminDashboard() {
           <div className="flex items-center space-x-2">
             {getStatusDisplay()}
             <select
-              id={`status-${complaintId}`} // Adding a unique id for each complaint
-              name="status" // Added name for better accessibility
+              id={`status-${complaintId}`}
+              name="status"
               className="ml-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 p-1 cursor-pointer"
               value={status}
               onChange={(e) =>
