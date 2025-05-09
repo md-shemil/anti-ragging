@@ -72,7 +72,7 @@ export function Complaint() {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-      if (!user._id) {
+      if (!user.id) {
         toast.error("You must be logged in to submit a complaint");
         setIsLoading(false);
         return;
@@ -93,7 +93,7 @@ export function Complaint() {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/complaints/submit-complaint`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/complaints/submit`,
         {
           method: "POST",
           headers: {
@@ -103,20 +103,26 @@ export function Complaint() {
         }
       );
 
-      const data = await response.json();
+      const text = await response.text(); // Get raw text response
 
-      if (response.ok && data.success) {
-        toast.success("Your complaint has been submitted");
-        setFormData({
-          subject: "",
-          description: "",
-          date: "",
-          location: "",
-          witnesses: "",
-        });
-        setSelectedFile(null);
+      if (response.ok) {
+        const data = JSON.parse(text); // Parse JSON if the response is OK
+        if (data.success) {
+          toast.success("Your complaint has been submitted");
+          setFormData({
+            subject: "",
+            description: "",
+            date: "",
+            location: "",
+            witnesses: "",
+          });
+          setSelectedFile(null);
+        } else {
+          toast.error(data.message || "Failed to submit complaint");
+        }
       } else {
-        toast.error(data.message || "Failed to submit complaint");
+        console.error("Error submitting complaint:", text);
+        toast.error("Failed to submit complaint. Please try again later.");
       }
     } catch (error) {
       console.error("Error submitting complaint:", error);
@@ -126,11 +132,13 @@ export function Complaint() {
     }
   };
 
+  // In handleFileChange, remove the PDF check:
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.type !== "application/pdf") {
-        toast.error("Only PDF files are allowed.");
+      const sizeInMB = file.size / (1024 * 1024);
+      if (sizeInMB > MAX_FILE_SIZE_MB) {
+        toast.error("File must be less than 5MB.");
         return;
       }
       setSelectedFile(file);
@@ -237,17 +245,16 @@ export function Complaint() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Supporting Evidence (PDF only)
+                Supporting Evidence
               </label>
               <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-3">
                 <label className="cursor-pointer inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none">
                   <Upload className="h-4 w-4 mr-2" />
-                  {selectedFile ? selectedFile.name : "Choose a PDF"}
+                  {selectedFile ? selectedFile.name : "Choose a file"}
                   <input
                     type="file"
                     className="sr-only"
                     onChange={handleFileChange}
-                    accept=".pdf"
                   />
                 </label>
                 {selectedFile && (
@@ -261,7 +268,7 @@ export function Complaint() {
                 )}
               </div>
               <p className="mt-2 text-xs text-gray-500">
-                Accepted format: .pdf (max 5MB)
+                Supporting Evidence (Any file type max 5MB)
               </p>
             </div>
 

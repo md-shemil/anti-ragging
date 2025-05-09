@@ -2,14 +2,15 @@ import { useEffect, useState } from "react";
 import { Shield, AlertTriangle, FileText, XCircle } from "lucide-react";
 
 interface SecurityReport {
-  id: string;
-  timestamp: string;
-  userId: string;
-  fileName: string;
-  fileType: string;
-  threatType: string;
-  status: "blocked" | "warning" | "clean";
-  details: string;
+  _id: string;
+  createdAt: string;
+  name?: string;
+  department?: string;
+  originalFilename: string;
+  fileHash: string;
+  status: "clean" | "warning" | "malicious";
+  vtLink: string;
+  details?: string;
 }
 
 export function SecurityReports() {
@@ -17,22 +18,35 @@ export function SecurityReports() {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    async function fetchReports() {
+    const fetchReports = async () => {
       try {
-        const response = await fetch("/api/security-reports"); // Update the URL if needed
+        const token = localStorage.getItem("token");
+        const response = await fetch(
+          `${import.meta.env.VITE_BACKEND_URL}/api/scans/all`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch scan reports");
+        }
+
         const data = await response.json();
         setReports(data);
       } catch (error) {
-        console.error("Failed to fetch security reports:", error);
+        console.error("Error fetching reports:", error);
       } finally {
         setLoading(false);
       }
-    }
+    };
 
     fetchReports();
   }, []);
 
-  const blockedCount = reports.filter((r) => r.status === "blocked").length;
+  const maliciousCount = reports.filter((r) => r.status === "malicious").length;
   const warningCount = reports.filter((r) => r.status === "warning").length;
   const cleanCount = reports.filter((r) => r.status === "clean").length;
 
@@ -52,108 +66,106 @@ export function SecurityReports() {
               <div className="flex items-center">
                 <XCircle className="h-8 w-8 text-red-600 mr-3" />
                 <div>
-                  <h3 className="font-semibold text-red-900">
-                    Blocked Uploads
-                  </h3>
-                  <p className="text-2xl font-bold text-red-600">
-                    {blockedCount}
+                  <p className="text-lg font-medium text-red-700">
+                    {maliciousCount}
                   </p>
+                  <p className="text-sm text-red-600">Malicious Files</p>
                 </div>
               </div>
             </div>
-
             <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
               <div className="flex items-center">
                 <AlertTriangle className="h-8 w-8 text-yellow-600 mr-3" />
                 <div>
-                  <h3 className="font-semibold text-yellow-900">Warnings</h3>
-                  <p className="text-2xl font-bold text-yellow-600">
+                  <p className="text-lg font-medium text-yellow-700">
                     {warningCount}
                   </p>
+                  <p className="text-sm text-yellow-600">Warnings</p>
                 </div>
               </div>
             </div>
-
             <div className="bg-green-50 p-4 rounded-lg border border-green-200">
               <div className="flex items-center">
                 <FileText className="h-8 w-8 text-green-600 mr-3" />
                 <div>
-                  <h3 className="font-semibold text-green-900">Clean Files</h3>
-                  <p className="text-2xl font-bold text-green-600">
+                  <p className="text-lg font-medium text-green-700">
                     {cleanCount}
                   </p>
+                  <p className="text-sm text-green-600">Clean Files</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            {loading ? (
-              <div className="text-center py-8 text-gray-500">
-                Loading reports...
-              </div>
-            ) : (
+          {loading ? (
+            <p>Loading reports...</p>
+          ) : reports.length === 0 ? (
+            <p className="text-gray-500">No threats or warnings found.</p>
+          ) : (
+            <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Timestamp
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
+                      User
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      User ID
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
+                      File
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      File Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Threat Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Details
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
+                      VirusTotal
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-200">
                   {reports.map((report) => (
-                    <tr key={report.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {report.timestamp}
+                    <tr key={report._id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {report.name && report.department
+                          ? `${report.name} (${report.department})`
+                          : "Unknown User"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {report.userId}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {report.originalFilename}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {report.fileName}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {report.threatType}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold capitalize">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            report.status === "blocked"
-                              ? "bg-red-100 text-red-800"
+                          className={`text-${
+                            report.status === "clean"
+                              ? "green"
                               : report.status === "warning"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-green-100 text-green-800"
-                          }`}
+                              ? "yellow"
+                              : "red"
+                          }-600`}
                         >
-                          {report.status.charAt(0).toUpperCase() +
-                            report.status.slice(1)}
+                          {report.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        {report.details}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {new Date(report.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <a
+                          href={report.vtLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 underline"
+                        >
+                          View Report
+                        </a>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

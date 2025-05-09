@@ -45,7 +45,8 @@ export function AdminDashboard() {
     const fetchComplaints = async () => {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/api/complaints/complaint`,
+          `${import.meta.env.VITE_BACKEND_URL}/api/complaints/all`,
+
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
